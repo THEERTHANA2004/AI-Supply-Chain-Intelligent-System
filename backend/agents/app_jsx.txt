@@ -1,0 +1,912 @@
+import { useEffect, useState } from "react";
+import {
+  Factory,
+  AlertTriangle,
+  CheckCircle,
+  Activity,
+  TrendingUp,
+  Package,
+  Users,
+  Network,
+  Brain,
+  ShieldAlert,
+  Warehouse,
+  RefreshCw,
+  Lightbulb,
+} from "lucide-react";
+
+import "./App.css";
+
+const API = "http://127.0.0.1:8000";
+
+function App() {
+  const [decisionData, setDecisionData] = useState(null);
+  const [forecastData, setForecastData] = useState(null);
+  const [supplierData, setSupplierData] = useState(null);
+  const [inventoryData, setInventoryData] = useState(null);
+  const [workforceData, setWorkforceData] = useState(null);
+  const [riskData, setRiskData] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [
+        decisionResponse,
+        forecastResponse,
+        supplierResponse,
+        inventoryResponse,
+        workforceResponse,
+        riskResponse,
+      ] = await Promise.all([
+        fetch(`${API}/api/decision-intelligence`),
+        fetch(`${API}/api/demand-forecast`),
+        fetch(`${API}/api/supplier-risk`),
+        fetch(`${API}/api/inventory-optimization`),
+        fetch(`${API}/api/workforce-intelligence`),
+        fetch(`${API}/api/risk-propagation`),
+      ]);
+
+      if (
+        !decisionResponse.ok ||
+        !forecastResponse.ok ||
+        !supplierResponse.ok ||
+        !inventoryResponse.ok ||
+        !workforceResponse.ok ||
+        !riskResponse.ok
+      ) {
+        throw new Error("One or more backend APIs failed.");
+      }
+
+      const [
+        decision,
+        forecast,
+        supplier,
+        inventory,
+        workforce,
+        risk,
+      ] = await Promise.all([
+        decisionResponse.json(),
+        forecastResponse.json(),
+        supplierResponse.json(),
+        inventoryResponse.json(),
+        workforceResponse.json(),
+        riskResponse.json(),
+      ]);
+
+      setDecisionData(decision);
+      setForecastData(forecast);
+      setSupplierData(supplier);
+      setInventoryData(inventory);
+      setWorkforceData(workforce);
+      setRiskData(risk);
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        "Unable to connect to the Supply Chain AI backend. Make sure FastAPI is running on port 8000."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  /* =========================
+     LOADING SCREEN
+     ========================= */
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loader">
+          <Brain size={38} />
+        </div>
+
+        <h2>Supply Chain AI</h2>
+
+        <p>Loading intelligence from AI agents...</p>
+      </div>
+    );
+  }
+
+  /* =========================
+     ERROR SCREEN
+     ========================= */
+
+  if (error) {
+    return (
+      <div className="error-screen">
+        <div className="error-icon">
+          <ShieldAlert size={38} />
+        </div>
+
+        <h2>Backend Connection Error</h2>
+
+        <p>{error}</p>
+
+        <button onClick={loadData}>
+          <RefreshCw size={17} />
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
+
+  /* =========================
+     DECISION INTELLIGENCE
+     =========================
+     
+     Backend response:
+     
+     {
+       "agent": "Decision Intelligence Agent",
+       "warehouses_analyzed": 5,
+       "priority_summary": {...},
+       "decisions": [...]
+     }
+  */
+
+  const warehouses = decisionData?.decisions || [];
+
+  const highPriority = warehouses.filter(
+    (warehouse) => warehouse.Decision_Priority === "High Priority"
+  ).length;
+
+  const monitor = warehouses.filter(
+    (warehouse) => warehouse.Decision_Priority === "Monitor"
+  ).length;
+
+  const normal = warehouses.filter(
+    (warehouse) => warehouse.Decision_Priority === "Normal"
+  ).length;
+
+  /* =========================
+     OTHER AI AGENT DATA
+     ========================= */
+
+  const forecast =
+    forecastData?.forecast ||
+    forecastData?.predictions ||
+    forecastData?.data ||
+    [];
+
+  const supplierRisks =
+    supplierData?.suppliers ||
+    supplierData?.supplier_risks ||
+    supplierData?.data ||
+    [];
+
+  const inventoryItems =
+    inventoryData?.items ||
+    inventoryData?.inventory ||
+    inventoryData?.data ||
+    [];
+
+  const workforceItems =
+    workforceData?.workforce ||
+    workforceData?.employees ||
+    workforceData?.data ||
+    [];
+
+  const propagatedRisks =
+    riskData?.risks ||
+    riskData?.risk_propagation ||
+    riskData?.data ||
+    [];
+
+  return (
+    <div className="app">
+
+      {/* =========================
+          HEADER
+          ========================= */}
+
+      <header className="header">
+
+        <div>
+          <h1>
+            <Brain size={34} />
+
+            Supply Chain AI Control Tower
+          </h1>
+
+          <p>
+            Autonomous intelligence for demand, suppliers, inventory,
+            workforce and operational risk
+          </p>
+        </div>
+
+        <div className="connection">
+          <span className="connection-dot"></span>
+
+          <CheckCircle size={17} />
+
+          AI Backend Connected
+        </div>
+
+      </header>
+
+      <main className="dashboard">
+
+        {/* =========================
+            CONTROL TOWER OVERVIEW
+            ========================= */}
+
+        <section className="section">
+
+          <div className="section-title">
+
+            <div>
+              <h2>
+                <Activity size={22} />
+
+                Control Tower Overview
+              </h2>
+
+              <p>
+                Real-time operational intelligence across the supply chain
+              </p>
+            </div>
+
+            <button
+              className="refresh-button"
+              onClick={loadData}
+            >
+              <RefreshCw size={16} />
+
+              Refresh
+            </button>
+
+          </div>
+
+          <div className="cards">
+
+            {/* Total Warehouses */}
+
+            <div className="card">
+
+              <div className="card-icon">
+                <Warehouse size={28} />
+              </div>
+
+              <div>
+                <span>Total Warehouses</span>
+
+                <strong>
+                  {warehouses.length}
+                </strong>
+              </div>
+
+            </div>
+
+            {/* High Priority */}
+
+            <div className="card danger">
+
+              <div className="card-icon">
+                <AlertTriangle size={28} />
+              </div>
+
+              <div>
+                <span>High Priority</span>
+
+                <strong>
+                  {highPriority}
+                </strong>
+              </div>
+
+            </div>
+
+            {/* Monitor */}
+
+            <div className="card warning">
+
+              <div className="card-icon">
+                <Activity size={28} />
+              </div>
+
+              <div>
+                <span>Monitor</span>
+
+                <strong>
+                  {monitor}
+                </strong>
+              </div>
+
+            </div>
+
+            {/* Normal */}
+
+            <div className="card success">
+
+              <div className="card-icon">
+                <CheckCircle size={28} />
+              </div>
+
+              <div>
+                <span>Normal</span>
+
+                <strong>
+                  {normal}
+                </strong>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* =========================
+            AI AGENT INTELLIGENCE
+            ========================= */}
+
+        <section className="section">
+
+          <div className="section-title">
+
+            <div>
+
+              <h2>
+                <Brain size={22} />
+
+                AI Agent Intelligence
+              </h2>
+
+              <p>
+                Six specialized AI agents continuously analyze the supply chain
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="agent-grid">
+
+            {/* Demand Forecast */}
+
+            <div className="agent-card">
+
+              <div className="agent-header">
+
+                <div className="agent-icon blue">
+                  <TrendingUp size={27} />
+                </div>
+
+                <div>
+
+                  <h3>
+                    Demand Forecast Agent
+                  </h3>
+
+                  <span>
+                    Demand prediction
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="agent-main-value">
+                {forecast.length || "Active"}
+              </div>
+
+              <div className="agent-label">
+                Forecast records generated
+              </div>
+
+              <div className="agent-description">
+                Predicts future demand patterns and helps identify upcoming
+                demand changes across the supply network.
+              </div>
+
+            </div>
+
+            {/* Supplier Risk */}
+
+            <div className="agent-card">
+
+              <div className="agent-header">
+
+                <div className="agent-icon red">
+                  <Factory size={27} />
+                </div>
+
+                <div>
+
+                  <h3>
+                    Supplier Risk Agent
+                  </h3>
+
+                  <span>
+                    Supplier monitoring
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="agent-main-value">
+                {supplierRisks.length || "Active"}
+              </div>
+
+              <div className="agent-label">
+                Supplier risk records
+              </div>
+
+              <div className="agent-description">
+                Monitors supplier reliability and identifies potential
+                disruptions before they impact operations.
+              </div>
+
+            </div>
+
+            {/* Inventory Optimization */}
+
+            <div className="agent-card">
+
+              <div className="agent-header">
+
+                <div className="agent-icon orange">
+                  <Package size={27} />
+                </div>
+
+                <div>
+
+                  <h3>
+                    Inventory Optimization Agent
+                  </h3>
+
+                  <span>
+                    Stock intelligence
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="inventory-stats">
+
+                <div className="mini-stat critical">
+
+                  <strong>
+                    {inventoryItems.length || "—"}
+                  </strong>
+
+                  <span>
+                    Items Analyzed
+                  </span>
+
+                </div>
+
+                <div className="mini-stat reorder">
+
+                  <strong>
+                    AI
+                  </strong>
+
+                  <span>
+                    Optimization
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="agent-description">
+                Identifies inventory risks, replenishment needs and
+                opportunities to improve stock efficiency.
+              </div>
+
+            </div>
+
+            {/* Workforce */}
+
+            <div className="agent-card">
+
+              <div className="agent-header">
+
+                <div className="agent-icon green">
+                  <Users size={27} />
+                </div>
+
+                <div>
+
+                  <h3>
+                    Workforce Intelligence Agent
+                  </h3>
+
+                  <span>
+                    Workforce planning
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="agent-main-value">
+                {workforceItems.length || "Active"}
+              </div>
+
+              <div className="agent-label">
+                Workforce records analyzed
+              </div>
+
+              <div className="agent-description">
+                Analyzes workforce capacity and helps identify operational
+                staffing requirements.
+              </div>
+
+            </div>
+
+            {/* Risk Propagation */}
+
+            <div className="agent-card">
+
+              <div className="agent-header">
+
+                <div className="agent-icon purple">
+                  <Network size={27} />
+                </div>
+
+                <div>
+
+                  <h3>
+                    Risk Propagation Agent
+                  </h3>
+
+                  <span>
+                    Network risk analysis
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="agent-main-value">
+                {propagatedRisks.length || "Active"}
+              </div>
+
+              <div className="agent-label">
+                Risk relationships analyzed
+              </div>
+
+              <div className="agent-description">
+                Detects how disruptions can spread through suppliers,
+                warehouses and operational dependencies.
+              </div>
+
+            </div>
+
+            {/* Decision Intelligence */}
+
+            <div className="agent-card decision-agent">
+
+              <div className="agent-header">
+
+                <div className="agent-icon robot">
+                  <Brain size={27} />
+                </div>
+
+                <div>
+
+                  <h3>
+                    Decision Intelligence Agent
+                  </h3>
+
+                  <span>
+                    Autonomous recommendations
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="decision-highlight">
+
+                <Lightbulb size={27} />
+
+                <div>
+
+                  <strong>
+                    {warehouses.length}
+                  </strong>
+
+                  <span>
+                    warehouse decisions generated
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="agent-description">
+                Combines signals from all AI agents to generate
+                operational priorities and recommended actions.
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* =========================
+            WAREHOUSE DECISIONS
+            ========================= */}
+
+        <section className="section">
+
+          <div className="section-title">
+
+            <div>
+
+              <h2>
+                <Warehouse size={22} />
+
+                Warehouse Decisions
+              </h2>
+
+              <p>
+                AI-generated operational priorities for each warehouse
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="table-container">
+
+            <table>
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Warehouse
+                  </th>
+
+                  <th>
+                    Priority
+                  </th>
+
+                  <th>
+                    Risk Score
+                  </th>
+
+                  <th>
+                    Overall Risk
+                  </th>
+
+                  <th>
+                    Recommended Action
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {warehouses.map((warehouse, index) => {
+
+                  const priority =
+                    warehouse.Decision_Priority || "Normal";
+
+                  const priorityClass =
+                    priority === "High Priority"
+                      ? "high"
+                      : priority === "Monitor"
+                      ? "monitor"
+                      : "normal";
+
+                  const overallRisk =
+                    warehouse.Overall_Risk_Level || "Low";
+
+                  const riskClass =
+                    String(overallRisk)
+                      .toLowerCase()
+                      .includes("high")
+                      ? "high"
+                      : String(overallRisk)
+                          .toLowerCase()
+                          .includes("medium")
+                      ? "monitor"
+                      : "low";
+
+                  return (
+
+                    <tr key={index}>
+
+                      <td>
+
+                        <strong className="warehouse-name">
+
+                          <Warehouse size={17} />
+
+                          {warehouse.Warehouse_ID ||
+                            `WH_${index + 1}`}
+
+                        </strong>
+
+                      </td>
+
+                      <td>
+
+                        <span
+                          className={`badge ${priorityClass}`}
+                        >
+                          {priority}
+                        </span>
+
+                      </td>
+
+                      <td>
+
+                        <strong>
+                          {warehouse.Propagated_Risk_Score ?? "—"}
+                        </strong>
+
+                      </td>
+
+                      <td>
+
+                        <span
+                          className={`badge ${riskClass}`}
+                        >
+                          {overallRisk}
+                        </span>
+
+                      </td>
+
+                      <td className="action">
+
+                        {warehouse.Action_Plan ||
+                          "Continue monitoring operations."}
+
+                      </td>
+
+                    </tr>
+
+                  );
+
+                })}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+        {/* =========================
+            AI DECISION EXPLANATIONS
+            ========================= */}
+
+        <section className="section">
+
+          <div className="section-title">
+
+            <div>
+
+              <h2>
+                <Lightbulb size={22} />
+
+                AI Decision Explanations
+              </h2>
+
+              <p>
+                Why the AI is recommending operational attention
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="explanation-grid">
+
+            {warehouses.map((warehouse, index) => {
+
+              const priority =
+                warehouse.Decision_Priority || "Normal";
+
+              const priorityClass =
+                priority === "High Priority"
+                  ? "high"
+                  : priority === "Monitor"
+                  ? "monitor"
+                  : "normal";
+
+              return (
+
+                <div
+                  className="explanation-card"
+                  key={index}
+                >
+
+                  <div className="explanation-header">
+
+                    <strong>
+                      {warehouse.Warehouse_ID ||
+                        `Warehouse ${index + 1}`}
+                    </strong>
+
+                    <span
+                      className={`badge ${priorityClass}`}
+                    >
+                      {priority}
+                    </span>
+
+                  </div>
+
+                  <p>
+
+                    {warehouse.Why_This_Decision ||
+                      "The AI is continuously monitoring operational signals for this warehouse."}
+
+                  </p>
+
+                  <div className="recommendation">
+
+                    <span>
+                      Recommended Action
+                    </span>
+
+                    <strong>
+
+                      {warehouse.Action_Plan ||
+                        "Continue monitoring operations."}
+
+                    </strong>
+
+                  </div>
+
+                </div>
+
+              );
+
+            })}
+
+          </div>
+
+        </section>
+
+        {/* =========================
+            FOOTER
+            ========================= */}
+
+        <footer>
+
+          <div>
+
+            <Brain size={17} />
+
+            <strong>
+              AI Supply Chain Control Tower
+            </strong>
+
+          </div>
+
+          <span>
+            Powered by FastAPI + React + AI Agents
+          </span>
+
+        </footer>
+
+      </main>
+
+    </div>
+  );
+}
+
+export default App;
