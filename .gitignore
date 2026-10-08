@@ -44,3 +44,11 @@ build/
 # Temporary files
 *.tmp
 *.temp
+# Deployment runtime files
+!data/raw/supply_chain_dataset1.csv
+!data/supplier_risk_features.csv
+!data/inventory_optimization_results.csv
+!data/workforce_intelligence_results.csv
+!data/risk_propagation_results.csv
+!data/decision_intelligence_results.csv
+!ml/demand_forecasting/models/demand_historical_xgboost.pkl

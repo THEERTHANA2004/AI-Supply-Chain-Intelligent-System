@@ -1,0 +1,6 @@
+Warehouse_ID,Avg_Inventory_Risk,Critical_Items,Reorder_Items,Avg_Workforce_Risk,High_Pressure_Days,Monitor_Days,Supplier_Risk_Exposure,Propagated_Risk_Score,Overall_Risk_Level,Risk_Propagation_Explanation
+WH_1,0.2,0,2,0.11,0,8,0.68,34.41,Low,Low propagated risk. Current operational signals appear stable.
+WH_2,0.15,0,0,0.11,0,12,0.68,32.84,Low,Low propagated risk. Current operational signals appear stable.
+WH_3,0.18,1,0,0.11,0,6,0.68,33.87,Low,Low propagated risk. Current operational signals appear stable.
+WH_4,0.21,1,2,0.11,0,9,0.68,34.92,Low,Low propagated risk. Current operational signals appear stable.
+WH_5,0.14,0,0,0.11,0,12,0.68,32.12,Low,Low propagated risk. Current operational signals appear stable.
