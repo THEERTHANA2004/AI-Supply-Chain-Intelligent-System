@@ -35,6 +35,19 @@ from backend.agents.decision_intelligence_agent import (
 )
 
 
+# SUPPLY_CHAIN_INTERACTIVE_FEATURES_V1
+from pydantic import BaseModel, Field
+from backend.agents.genai_assistant import GenAIAssistant
+from backend.agents.what_if_simulator import WhatIfSimulator
+
+class AssistantQuestionRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=500)
+
+class WhatIfScenarioRequest(BaseModel):
+    demand_change_pct: float = Field(default=15, ge=-100, le=500)
+    lead_time_change_pct: float = Field(default=20, ge=-90, le=500)
+    inventory_change_pct: float = Field(default=-10, ge=-100, le=500)
+
 app = FastAPI(
     title="Supply Chain AI API",
     description="AI-Powered Multi-Agent Supply Chain Intelligence System",
@@ -256,3 +269,28 @@ def data_validation():
         "validation": report["checks"],
     }
 
+# SUPPLY_CHAIN_INTERACTIVE_FEATURES_V1
+@app.post("/api/assistant")
+def ask_supply_chain_assistant(request: AssistantQuestionRequest):
+    question = request.question.strip()
+    if not question:
+        return {
+            "question": request.question,
+            "answer": "Please enter a supply-chain question.",
+            "assistant_type": "rule-based, data-grounded",
+        }
+    assistant = GenAIAssistant()
+    return {
+        "question": question,
+        "answer": assistant.ask(question),
+        "assistant_type": "rule-based, data-grounded",
+    }
+
+@app.post("/api/what-if")
+def run_what_if_scenario(request: WhatIfScenarioRequest):
+    simulator = WhatIfSimulator()
+    return simulator.run_scenario(
+        demand_change_pct=request.demand_change_pct,
+        lead_time_change_pct=request.lead_time_change_pct,
+        inventory_change_pct=request.inventory_change_pct,
+    )

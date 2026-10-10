@@ -37,6 +37,16 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // SUPPLY_CHAIN_INTERACTIVE_FEATURES_V1
+  const [assistantQuestion, setAssistantQuestion] = useState("");
+  const [assistantAnswer, setAssistantAnswer] = useState("");
+  const [assistantError, setAssistantError] = useState("");
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [scenario, setScenario] = useState({ demand_change_pct: 15, lead_time_change_pct: 20, inventory_change_pct: -10 });
+  const [scenarioResult, setScenarioResult] = useState(null);
+  const [scenarioError, setScenarioError] = useState("");
+  const [scenarioLoading, setScenarioLoading] = useState(false);
+
   async function loadData() {
     setLoading(true);
     setError("");
@@ -72,6 +82,41 @@ function App() {
     }
   }
 
+  // SUPPLY_CHAIN_INTERACTIVE_FEATURES_V1
+  async function askAssistant() {
+    const question = assistantQuestion.trim();
+    if (!question) { setAssistantError("Enter a question first."); setAssistantAnswer(""); return; }
+    setAssistantLoading(true); setAssistantError(""); setAssistantAnswer("");
+    try {
+      const response = await fetch(`${API}/api/assistant`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || `Assistant request failed (${response.status}).`);
+      setAssistantAnswer(payload.answer || "The assistant returned no answer.");
+    } catch (err) { setAssistantError(err.message || "Could not contact the assistant API."); }
+    finally { setAssistantLoading(false); }
+  }
+
+  async function runWhatIf() {
+    setScenarioLoading(true); setScenarioError(""); setScenarioResult(null);
+    try {
+      const requestBody = {
+        demand_change_pct: Number(scenario.demand_change_pct),
+        lead_time_change_pct: Number(scenario.lead_time_change_pct),
+        inventory_change_pct: Number(scenario.inventory_change_pct),
+      };
+      const response = await fetch(`${API}/api/what-if`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || `Simulation failed (${response.status}).`);
+      setScenarioResult(payload);
+    } catch (err) { setScenarioError(err.message || "Could not run the what-if simulation."); }
+    finally { setScenarioLoading(false); }
+  }
   useEffect(() => {
     loadData();
   }, []);
@@ -495,6 +540,37 @@ function App() {
           </div>
         </section>
 
+        {/* SUPPLY_CHAIN_INTERACTIVE_FEATURES_V1 */}
+        <section className="section">
+          <div className="section-title"><div><h2><Brain size={22} /> Supply Chain Assistant</h2><p>Ask questions about your project data using the rule-based, data-grounded assistant.</p></div></div>
+          <div className="feature-panel">
+            <label className="feature-label" htmlFor="assistant-question">Your question</label>
+            <textarea id="assistant-question" className="feature-textarea" rows={3} value={assistantQuestion} onChange={(event) => setAssistantQuestion(event.target.value)} placeholder="Example: Why is WH_4 high priority?" />
+            <div className="feature-actions"><button className="refresh-button" type="button" onClick={askAssistant} disabled={assistantLoading}>{assistantLoading ? "Checking data..." : "Ask assistant"}</button><span className="feature-note">Answers use the project's CSV outputs and predefined rules.</span></div>
+            {assistantError && <p className="feature-error">{assistantError}</p>}
+            {assistantAnswer && <div className="feature-result"><h3>Assistant response</h3><p className="feature-prewrap">{assistantAnswer}</p></div>}
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="section-title"><div><h2><Activity size={22} /> What-If Scenario Simulator</h2><p>Change demand, supplier lead time, and inventory to estimate operational impact.</p></div></div>
+          <div className="feature-panel">
+            <div className="scenario-input-grid">
+              <div><label className="feature-label" htmlFor="demand-change">Demand change (%)</label><input id="demand-change" className="feature-input" type="number" min="-100" max="500" step="1" value={scenario.demand_change_pct} onChange={(event) => setScenario({ ...scenario, demand_change_pct: event.target.value })} /></div>
+              <div><label className="feature-label" htmlFor="lead-time-change">Supplier lead-time change (%)</label><input id="lead-time-change" className="feature-input" type="number" min="-90" max="500" step="1" value={scenario.lead_time_change_pct} onChange={(event) => setScenario({ ...scenario, lead_time_change_pct: event.target.value })} /></div>
+              <div><label className="feature-label" htmlFor="inventory-change">Inventory change (%)</label><input id="inventory-change" className="feature-input" type="number" min="-100" max="500" step="1" value={scenario.inventory_change_pct} onChange={(event) => setScenario({ ...scenario, inventory_change_pct: event.target.value })} /></div>
+            </div>
+            <div className="feature-actions"><button className="refresh-button" type="button" onClick={runWhatIf} disabled={scenarioLoading}>{scenarioLoading ? "Simulating..." : "Run simulation"}</button><span className="feature-note">Defaults: demand +15%, lead time +20%, inventory âˆ’10%.</span></div>
+            {scenarioError && <p className="feature-error">{scenarioError}</p>}
+            {scenarioResult && <div className="feature-result">
+              <h3>Scenario results</h3>
+              {scenarioResult.scenario && <p className="feature-note">Demand {scenarioResult.scenario.demand_change_pct}% | Lead time {scenarioResult.scenario.lead_time_change_pct}% | Inventory {scenarioResult.scenario.inventory_change_pct}%</p>}
+              <h4>Inventory impact</h4><div className="feature-metrics-grid">{Object.entries(scenarioResult.inventory || {}).map(([key, value]) => <div className="feature-metric" key={`inventory-${key}`}><span>{key.replace(/_/g, " ")}</span><strong>{typeof value === "number" ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : (value && typeof value === "object" ? Object.entries(value).map(([key, count]) => key.replace(/_/g, " ") + ": " + count).join(", ") : String(value))}</strong></div>)}</div>
+              <h4>Workforce impact</h4><div className="feature-metrics-grid">{Object.entries(scenarioResult.workforce || {}).map(([key, value]) => <div className="feature-metric" key={`workforce-${key}`}><span>{key.replace(/_/g, " ")}</span><strong>{typeof value === "number" ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : (value && typeof value === "object" ? Object.entries(value).map(([key, count]) => key.replace(/_/g, " ") + ": " + count).join(", ") : String(value))}</strong></div>)}</div>
+              {Array.isArray(scenarioResult.recommendations) && scenarioResult.recommendations.length > 0 && <><h4>Recommendations</h4><ul className="feature-recommendations">{scenarioResult.recommendations.map((item, index) => <li key={`recommendation-${index}`}>{item}</li>)}</ul></>}
+            </div>}
+          </div>
+        </section>
         <footer>
           <div>
             <Brain size={18} />
